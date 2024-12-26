@@ -19,7 +19,7 @@ def handleUserInput(command):
         case "echo":
             print(" ".join(command[1:]))
         case "type":
-            commands = {"exit", "echo", "type"}
+            commands = {"exit", "echo", "type", "pwd"}
             cmdPath = None
             for path in PATH:
                 if os.path.isfile(f"{path}/{command[1]}"):
@@ -31,6 +31,8 @@ def handleUserInput(command):
                 print(f"{command[1]} is {cmdPath}")
             else:
                 print(f"{command[1]}: not found")
+        case "pwd":
+            print(os.getcwd())
         case _:
             cmdPath = None
             for path in PATH:

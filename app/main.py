@@ -33,6 +33,15 @@ def handleUserInput(command):
                 print(f"{command[1]}: not found")
         case "pwd":
             print(os.getcwd())
+        case "cd":
+            if command[1] == "~":
+                path = os.path.expanduser("~")
+            else:
+                path = os.path.expanduser(command[1])
+            try:
+                os.chdir(path)
+            except FileNotFoundError:
+                print(f"cd: {command[1]}: No such file or directory")
         case _:
             cmdPath = None
             for path in PATH:

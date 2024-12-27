@@ -1,15 +1,16 @@
 import sys
 import os
+import shlex
 
 def handleUserInput(command):
     if not command.strip():
         return
-    
+
     original_command = command
-    command = command.strip().split()
-    
-    PATH = os.environ.get("PATH", "").split(":")
-    
+    command = shlex.split(command)
+
+    PATH = os.environ.get("PATH", "").split(os.pathsep)
+
     match command[0]:
         case "exit":
             if len(command) == 2 and command[1] == "0":
@@ -17,9 +18,9 @@ def handleUserInput(command):
             else:
                 print("invalid exit status")
         case "echo":
-            original = original_command[5:]
-            if original.startswith("'") and original.endswith("'"):
-                content = original[1:-1]
+            content = original_command[5:].strip()
+            if content.startswith("'") and content.endswith("'"):
+                content = content[1:-1]
                 if os.path.isfile(content):
                     try:
                         with open(content, "r") as file:
@@ -31,22 +32,33 @@ def handleUserInput(command):
             else:
                 print(" ".join(command[1:]))
         case "cat":
-            files = original_command[4:].strip().split("' '")
-            files = [file.strip("'") for file in files]
-            for file in files:
-                if os.path.isfile(file):
-                    try:
-                        with open(file, "r") as f:
-                            print(f.read(), end="")
-                    except Exception as e:
-                        print(f"Error reading {file}: {e}")
-                else:
-                    print(f"cat: {file}: No such file or directory")
+            content = original_command[4:].strip()
+            if content.startswith("'") or content.startswith('"'):
+                files = shlex.split(content)
+                for file in files:
+                    if os.path.isfile(file):
+                        try:
+                            with open(file, "r") as f:
+                                print(f.read(), end="")
+                        except Exception as e:
+                            print(f"Error reading {file}: {e}")
+                    else:
+                        print(f"cat: {file}: No such file or directory")
+            else:
+                for file in command[1:]:
+                    if os.path.isfile(file):
+                        try:
+                            with open(file, "r") as f:
+                                print(f.read(), end="")
+                        except Exception as e:
+                            print(f"Error reading {file}: {e}")
+                    else:
+                        print(f"cat: {file}: No such file or directory")
         case "type":
             if len(command) < 2:
                 print("type: missing argument")
                 return
-            
+
             commands = {"exit", "echo", "type", "pwd", "cd"}
             cmdPath = None
             for path in PATH:

@@ -5,10 +5,10 @@ def handleUserInput(command):
     if not command.strip():
         return
     
+    original_command = command
     command = command.strip().split()
     
-    PATH = os.environ.get("PATH")
-    PATH = PATH.split(":")
+    PATH = os.environ.get("PATH", "").split(":")
     
     match command[0]:
         case "exit":
@@ -17,9 +17,37 @@ def handleUserInput(command):
             else:
                 print("invalid exit status")
         case "echo":
-            print(" ".join(command[1:]))
+            original = original_command[5:]
+            if original.startswith("'") and original.endswith("'"):
+                content = original[1:-1]
+                if os.path.isfile(content):
+                    try:
+                        with open(content, "r") as file:
+                            print(file.read(), end="")
+                    except Exception as e:
+                        print(f"Error reading file: {e}")
+                else:
+                    print(content)
+            else:
+                print(" ".join(command[1:]))
+        case "cat":
+            files = original_command[4:].strip().split("' '")
+            files = [file.strip("'") for file in files]
+            for file in files:
+                if os.path.isfile(file):
+                    try:
+                        with open(file, "r") as f:
+                            print(f.read(), end="")
+                    except Exception as e:
+                        print(f"Error reading {file}: {e}")
+                else:
+                    print(f"cat: {file}: No such file or directory")
         case "type":
-            commands = {"exit", "echo", "type", "pwd"}
+            if len(command) < 2:
+                print("type: missing argument")
+                return
+            
+            commands = {"exit", "echo", "type", "pwd", "cd"}
             cmdPath = None
             for path in PATH:
                 if os.path.isfile(f"{path}/{command[1]}"):
@@ -34,14 +62,16 @@ def handleUserInput(command):
         case "pwd":
             print(os.getcwd())
         case "cd":
-            if command[1] == "~":
-                path = os.path.expanduser("~")
-            else:
-                path = os.path.expanduser(command[1])
+            if len(command) < 2:
+                print("cd: missing argument")
+                return
+            path = os.path.expanduser(command[1]) if command[1] != "~" else os.path.expanduser("~")
             try:
                 os.chdir(path)
             except FileNotFoundError:
                 print(f"cd: {command[1]}: No such file or directory")
+            except Exception as e:
+                print(f"cd: Error: {e}")
         case _:
             cmdPath = None
             for path in PATH:
@@ -54,12 +84,16 @@ def handleUserInput(command):
                 print(f"{command[0]}: command not found")
 
 def main():
-    
     while True:
-        sys.stdout.write("$ ")
-        command = input()
-        handleUserInput(command)
-
+        try:
+            sys.stdout.write("$ ")
+            command = input()
+            handleUserInput(command)
+        except KeyboardInterrupt:
+            print("\nExiting shell.")
+            break
+        except Exception as e:
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()

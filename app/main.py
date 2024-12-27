@@ -33,27 +33,16 @@ def handleUserInput(command):
                 print(" ".join(command[1:]))
         case "cat":
             content = original_command[4:].strip()
-            if content.startswith("'") or content.startswith('"'):
-                files = shlex.split(content)
-                for file in files:
-                    if os.path.isfile(file):
-                        try:
-                            with open(file, "r") as f:
-                                print(f.read(), end="")
-                        except Exception as e:
-                            print(f"Error reading {file}: {e}")
-                    else:
-                        print(f"cat: {file}: No such file or directory")
-            else:
-                for file in command[1:]:
-                    if os.path.isfile(file):
-                        try:
-                            with open(file, "r") as f:
-                                print(f.read(), end="")
-                        except Exception as e:
-                            print(f"Error reading {file}: {e}")
-                    else:
-                        print(f"cat: {file}: No such file or directory")
+            files = shlex.split(content) if content.startswith(("'", '"')) else command[1:]
+            for file in files:
+                if os.path.isfile(file):
+                    try:
+                        with open(file, "r") as f:
+                            print(f.read(), end="")
+                    except Exception as e:
+                        print(f"Error reading {file}: {e}")
+                else:
+                    print(f"cat: {file}: No such file or directory")
         case "type":
             if len(command) < 2:
                 print("type: missing argument")
@@ -85,13 +74,15 @@ def handleUserInput(command):
             except Exception as e:
                 print(f"cd: Error: {e}")
         case _:
+            executable = command[0]
             cmdPath = None
             for path in PATH:
-                if os.path.isfile(f"{path}/{command[0]}"):
-                    cmdPath = f"{path}/{command[0]}"
+                potential_path = os.path.join(path, executable)
+                if os.path.isfile(potential_path):
+                    cmdPath = potential_path
                     break
             if cmdPath:
-                os.system(" ".join(command))
+                os.system(" ".join([shlex.quote(cmdPath)] + command[1:]))
             else:
                 print(f"{command[0]}: command not found")
 
